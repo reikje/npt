@@ -62,3 +62,19 @@ And your default build.sbt is this:
 	}
 	
 You could always create a default SBT project and manually tweak everything, but that would be tedious. This plug-in aims to make it simpler for you.
+
+## Installation
+
+Often you want to install this as a global plug-in.
+
+### For sbt 0.13+
+
+If you don't already have one, create an `~/.sbt/0.13/plugins` directory. And inside of it, create a file `npt.sbt` containing the line
+
+    addSbtPlugin("me.rschatz" % "npt" % "0.1")
+    
+This will make `nptSettings` globally visible to your project definitions.
+
+If you wish to globally mix in `nptSettings`, create a file under `~/.sbt/0.13` called `npt.sbt` containing the line
+
+    seq(me.rschatz.Npt.nptSettings: _*)
