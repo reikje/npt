@@ -1,7 +1,8 @@
 package me.rschatz
 
 import org.scalatest.{FreeSpec, Matchers}
-import org.apache.commons.io.FileUtils
+import java.io.File
+
 /**
  * Tests the [[me.rschatz.NptExecutionContext]].
  *
@@ -10,7 +11,8 @@ import org.apache.commons.io.FileUtils
 class NptExecutionContextTest extends FreeSpec with Matchers {
     "A NptExecutionContext" - {
         "when created without args " - {
-            val context = new NptExecutionContext(null, Seq(), null)
+            val f = new Foo()
+            val context = NptExecutionContext(new File("."))
             "should parse to defaults" in {
                 val (orgValue, nameValue, templateValue) = context.inputArgs()
                 orgValue should be (Some(me.rschatz.Defaults.organization))
@@ -20,7 +22,7 @@ class NptExecutionContextTest extends FreeSpec with Matchers {
         }
 
         "when created with args " - {
-            val context = new NptExecutionContext(null, Seq("name:foo", "org:bar", "whatever"), null)
+            val context = NptExecutionContext(new File("."), Seq("name:foo", "org:bar", "whatever"), new PrintLogger)
             "should parse properly" in {
                 val (orgValue, nameValue, templateValue) = context.inputArgs()
                 templateValue should be (Some("whatever"))

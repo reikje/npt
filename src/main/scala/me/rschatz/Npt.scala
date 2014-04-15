@@ -19,7 +19,30 @@ object Defaults {
     val name = "default-name"
 }
 
-class NptExecutionContext(val baseDirectory: File, val args: Seq[String], val log: sbt.Logger) {
+trait NptLogger {
+    def debug(msg: String)
+    def info(msg: String)
+    def warn(msg: String)
+}
+
+class WrappedSBTLogger(log: sbt.Logger) extends NptLogger {
+    def debug(msg: String) = log.debug(msg)
+    def info(msg: String) = log.info(msg)
+    def warn(msg: String) = log.warn(msg)
+}
+
+class PrintLogger() extends NptLogger {
+    def debug(msg: String) = print(msg)
+    def info(msg: String) = print(msg)
+    def warn(msg: String) = print(msg)
+}
+
+class Foo(input:Int) {
+    def this() = { this( 0 ) }
+}
+
+case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log: NptLogger = new PrintLogger) {
+
     def inputArgs() = {
         val Org   = """org\:(\S+)""".r
         val Name  = """name\:(\S+)""".r
@@ -44,11 +67,7 @@ class NptExecutionContext(val baseDirectory: File, val args: Seq[String], val lo
     }
 }
 
-object Npt extends Plugin {
-    private val npt = InputKey[Unit]("npt")
-
-    private val nptCopy = InputKey[Unit]("npy-copy")
-
+class PluginExecutor(val es: NptExecutionContext) {
     private val DownloadableArchive = "^(https?|ftp|file)://.+\\.(gz|zip|jar)$".r
 
     private val sourceDirName = "src"
@@ -62,24 +81,7 @@ object Npt extends Plugin {
     private val defaultTemplate = "SBT.NPT.DEFAULT.TEMPLATE"
     private val templateFolder = "SBT.NPT.TEMPLATE.FOLDER"
 
-    val nptSettings = Seq(
-        npt := {
-            val nptArgs: Seq[String] = spaceDelimited("<arg>").parsed
-            println(nptArgs)
-
-            implicit val execContext = new NptExecutionContext(baseDirectory.value, nptArgs, streams.value.log)
-            createSrcDirectories()
-            createBuildSbt()
-            copyTemplate()
-        },
-        nptCopy := {
-            val nptArgs: Seq[String] = spaceDelimited("<arg>").parsed
-            implicit val execContext = new NptExecutionContext(baseDirectory.value, nptArgs, streams.value.log)
-            copyTemplate()
-        }
-    )
-
-    private def copyTemplate()(implicit es: NptExecutionContext): Unit = {
+    def copyTemplate(): Unit = {
         val log = es.log
         log.info(s"Finding template to copy")
 
@@ -98,15 +100,15 @@ object Npt extends Plugin {
                 }
             }
         }
-        
+
         if (folderToCopy.isDefined) {
             IO.copyDirectory(folderToCopy.get, es.baseDirectory)
         } else {
             log.info(s"Not copying a template")
         }
     }
-    
-    private def fromInputArgs()(implicit es: NptExecutionContext): Option[File] = {
+
+    def fromInputArgs(): Option[File] = {
         val log = es.log
 
         val (_, _, templateNameOption) = es.inputArgs()
@@ -122,9 +124,9 @@ object Npt extends Plugin {
             None
         }
     }
-    
 
-    private def fromDefaultTemplate()(implicit es: NptExecutionContext): Option[File] = {
+
+    def fromDefaultTemplate(): Option[File] = {
         // check SBT.NPT.DEFAULT.TEMPLATE
         val log = es.log
 
@@ -139,7 +141,7 @@ object Npt extends Plugin {
         None
     }
 
-    private def fromDefaultFolder()(implicit es: NptExecutionContext): Option[File] = {
+    def fromDefaultFolder(): Option[File] = {
         // check SBT.NPT.TEMPLATE.FOLDER
         // if SBT.NPT.TEMPLATE.FOLDER => get template name from args and copy this template
         val log = es.log
@@ -166,7 +168,7 @@ object Npt extends Plugin {
         None
     }
 
-    private def templateFolder(directory: File)(implicit es: NptExecutionContext): Option[File] = {
+    def templateFolder(directory: File): Option[File] = {
         val log = es.log
         if (directory.isDirectory) {
             log.info(s"Existing folder $directory")
@@ -177,7 +179,7 @@ object Npt extends Plugin {
         }
     }
 
-    private def downloadTemplate(url: String)(implicit es: NptExecutionContext): Option[File] = {
+    def downloadTemplate(url: String): Option[File] = {
         val log = es.log
 
         def download(url: String): Try[File] = {
@@ -217,14 +219,14 @@ object Npt extends Plugin {
         }
     }
 
-    private def createSrcDirectories()(implicit es: NptExecutionContext) = {
+    def createSrcDirectories() = {
         val log = es.log
         log.info("Creating source folders")
 
         IO.createDirectories(sourceDirs(es.baseDirectory))
     }
 
-    private def createBuildSbt()(implicit es: NptExecutionContext) = {
+    def createBuildSbt() = {
         val log = es.log
         log.info("Creating build.sbt")
 
@@ -243,7 +245,7 @@ object Npt extends Plugin {
         )
     }
 
-    private def sourceDirs(baseDirectory: File) = {
+    def sourceDirs(baseDirectory: File) = {
         Seq(sourceDirName).flatMap({
             rootDir => Seq(mainDirName, testDirName).flatMap({
                 subRootDir => Seq(scalaDirName, javaDirName, resourcesDirName).map({
@@ -252,4 +254,28 @@ object Npt extends Plugin {
             })
         })
     }
+}
+
+object Npt extends Plugin {
+    private val npt = InputKey[Unit]("npt")
+    private val nptCopy = InputKey[Unit]("npy-copy")
+
+    val nptSettings = Seq(
+        npt := {
+            val nptArgs: Seq[String] = spaceDelimited("<arg>").parsed
+            println(nptArgs)
+
+            val context = NptExecutionContext(baseDirectory.value, nptArgs, new WrappedSBTLogger(streams.value.log))
+            val executor = new PluginExecutor(context)
+            executor.createSrcDirectories()
+            executor.createBuildSbt()
+            executor.copyTemplate()
+        },
+        nptCopy := {
+            val nptArgs: Seq[String] = spaceDelimited("<arg>").parsed
+            val context = NptExecutionContext(baseDirectory.value, nptArgs, new WrappedSBTLogger(streams.value.log))
+            val executor = new PluginExecutor(context)
+            executor.copyTemplate()
+        }
+    )
 }
