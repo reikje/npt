@@ -110,3 +110,30 @@ can be downloaded, the plug-in will download the file to a temporary location, e
     $ [info] Deleting pre-existing temporary folder
     $ [info] Creating temporary folder (/tmp/NPT-DOWNLOAD)
     $ [info] Unzipping to temporary folder
+	
+If invoking `npt` with a path denoting a directory on the local file system, the plug-in will copy it's content into your new project.
+
+    $ mkdir newproject
+	$ cd newproject
+    $ sbt npt D:\test
+    $ [info] Creating source folders
+    $ [info] Creating build.sbt
+    $ [info] Finding template to copy
+    $ [info] Trying template name or location from input (D:\test)
+    $ [info] Existing folder D:\test
+	
+### Specifying a default template as a system property or environment variable
+
+A default template can be specified as a System property (when running SBT) or as a environment variable. The name is `SBT_NPT_DEFAULT_TEMPLATE` and the value is either a URL denoting an archive that 
+can be downloaded (zip, gz or jar) or a path denoting a directory on the local file system. If you have set SBT_NPT_DEFAULT_TEMPLATE you don't specify an additional argument when invoking `npt`.
+
+    $ mkdir newproject
+	$ cd newproject
+    $ sbt -DSBT_NPT_DEFAULT_TEMPLATE=D:\\test
+	$ npt
+    $ [info] Creating source folders
+    $ [info] Creating build.sbt
+    $ [info] Finding template to copy
+    $ [info] Trying SBT_NPT_DEFAULT_TEMPLATE (D:\test)
+    $ [info] URL: D:\test does not denote a downloadable archive
+    $ [info] Existing folder D:\test

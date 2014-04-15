@@ -30,8 +30,8 @@ object Defaults {
     val downloadDirName = "nptdownloads"
     val buildFileName = "build.sbt"
 
-    val defaultTemplateProperty = "SBT.NPT.DEFAULT.TEMPLATE"
-    val templateFolderProperty = "SBT.NPT.TEMPLATE.FOLDER"
+    val defaultTemplateProperty = "SBT_NPT_DEFAULT_TEMPLATE"
+    val templateFolderProperty = "SBT_NPT_TEMPLATE_FOLDER"
 }
 
 trait NptLogger {
@@ -112,7 +112,7 @@ class PluginExecutor(val es: NptExecutionContext) {
 
 
     def fromDefaultTemplate(): Option[File] = {
-        // check SBT.NPT.DEFAULT.TEMPLATE
+        // check SBT_NPT_DEFAULT_TEMPLATE
         val log = es.log
 
         for (props <- List(sys.env, sys.props)) {
@@ -127,8 +127,8 @@ class PluginExecutor(val es: NptExecutionContext) {
     }
 
     def fromDefaultFolder(): Option[File] = {
-        // check SBT.NPT.TEMPLATE.FOLDER
-        // if SBT.NPT.TEMPLATE.FOLDER => get template name from args and copy this template
+        // check SBT_NPT_TEMPLATE_FOLDER
+        // if SBT_NPT_TEMPLATE_FOLDER => get template name from args and copy this template
         val log = es.log
 
         for (props <- List(sys.env, sys.props)) {
@@ -247,7 +247,6 @@ object Npt extends Plugin {
     val nptSettings = Seq(
         npt := {
             val nptArgs: Seq[String] = spaceDelimited("<arg>").parsed
-            println(nptArgs)
 
             val context = NptExecutionContext(baseDirectory.value, nptArgs, new WrappedSBTLogger(streams.value.log))
             val executor = new PluginExecutor(context)
