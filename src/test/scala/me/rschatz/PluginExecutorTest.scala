@@ -127,6 +127,42 @@ class PluginExecutorTest extends FreeSpec with Matchers with BeforeAndAfterEach 
                 sys.props.update(Defaults.defaultTemplateProperty, new File(baseDirectory, "NON-EXISTING").getPath)
                 executor.fromDefaultTemplate() should be (None)
             }
+
+            "should figure out the template folder based on input args" in {
+                var executor = new PluginExecutor(
+                    NptExecutionContext(
+                        baseDirectory = baseDirectory,
+                        tempFolder = baseDirectory,
+                        args = List("http://search.maven.org/remotecontent?filepath=javax/jms/javax.jms-api/2.0/javax.jms-api-2.0.jar")
+                    )
+                )
+                executor.fromInputArgs() should be (Some(new File(baseDirectory, Defaults.downloadDirName)))
+
+                executor = new PluginExecutor(
+                    NptExecutionContext(
+                        baseDirectory = baseDirectory,
+                        args = List(baseDirectory.getPath)
+                    )
+                )
+                executor.fromInputArgs() should be (Some(baseDirectory))
+
+                executor = new PluginExecutor(
+                    NptExecutionContext(
+                        baseDirectory = baseDirectory,
+                        args = List(new File(baseDirectory, "NON_EXISTING").getPath)
+                    )
+                )
+                executor.fromInputArgs() should be (None)
+
+                executor = new PluginExecutor(
+                    NptExecutionContext(
+                        baseDirectory = baseDirectory,
+                        tempFolder = baseDirectory,
+                        args = List("http://search.maven.org/remotecontent?filepath=javax/jms/javax.jms-api/20000000.0/javax.jms-api-2.0.jar")
+                    )
+                )
+                executor.fromInputArgs() should be (None)
+            }
         }
     }
 }

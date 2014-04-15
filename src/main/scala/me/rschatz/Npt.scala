@@ -85,22 +85,7 @@ class PluginExecutor(val es: NptExecutionContext) {
         val log = es.log
         log.info(s"Finding template to copy")
 
-        var folderToCopy: Option[File] = None
-        val defaultTemplate = fromDefaultTemplate()
-        if (defaultTemplate.isDefined) {
-            folderToCopy = defaultTemplate
-        } else {
-            val defaultFolder = fromDefaultFolder()
-            if (defaultFolder.isDefined) {
-                folderToCopy = defaultFolder
-            } else {
-                val fromInput = fromInputArgs()
-                if (fromInput.isDefined) {
-                    folderToCopy = fromInput
-                }
-            }
-        }
-
+        val folderToCopy = fromDefaultTemplate() orElse fromDefaultFolder() orElse fromInputArgs()
         if (folderToCopy.isDefined) {
             IO.copyDirectory(folderToCopy.get, es.baseDirectory)
         } else {
