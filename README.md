@@ -75,6 +75,38 @@ If you don't already have one, create an `~/.sbt/0.13/plugins` directory. And in
     
 This will make `nptSettings` globally visible to your project definitions.
 
-If you wish to globally mix in `nptSettings`, create a file under `~/.sbt/0.13` called `npt.sbt` containing the line
+Now you should globally mix in `nptSettings`. Create a file under `~/.sbt/0.13` called `npt.sbt` containing the line
 
     seq(me.rschatz.Npt.nptSettings: _*)
+	
+## Usage
+
+There are several ways to use the npt plug-in.
+
+### Without specifying a template project to copy
+
+This way, the plug-in behaves almost exactly like the np plug-in. It will create the `src` folder and subfolders and also a `build.sbt` file for you but nothing else.
+
+    $ mkdir newproject
+	$ cd newproject
+    $ sbt npt
+    $ [info] Creating source folders
+    $ [info] Creating build.sbt
+    $ [info] Finding template to copy
+    $ [info] Not copying a template
+
+### Directly specifying a template project to copy
+
+It is possible to specify a downloadable archive (zip, gz or jar) or to point to a directory on the local file system. If invoking `npt` with a URL denoting an archive that 
+can be downloaded, the plug-in will download the file to a temporary location, extract the file and copy it's content into your new project.
+
+    $ mkdir newproject
+	$ cd newproject
+    $ sbt npt http://our.company.nexus:8081/nexus/content/repositories/releases/me/company/sbt-project-templates/1.0/mvc.zip
+    $ [info] Creating source folders
+    $ [info] Creating build.sbt
+    $ [info] Finding template to copy
+    $ [info] Trying template name or location from input (http://our.company.nexus:8081/nexus/content/repositories/releases/me/company/sbt-project-templates/1.0/mvc.zip)
+    $ [info] Deleting pre-existing temporary folder
+    $ [info] Creating temporary folder (/tmp/NPT-DOWNLOAD)
+    $ [info] Unzipping to temporary folder
