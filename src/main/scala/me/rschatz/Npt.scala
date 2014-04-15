@@ -19,7 +19,7 @@ object Defaults {
     val name = "default-name"
 }
 
-case class NptExecutionContext(baseDirectory: File, args: Seq[String], log: sbt.Logger) {
+class NptExecutionContext(val baseDirectory: File, val args: Seq[String], val log: sbt.Logger) {
     def inputArgs() = {
         val Org   = """org\:(\S+)""".r
         val Name  = """name\:(\S+)""".r
@@ -32,7 +32,13 @@ case class NptExecutionContext(baseDirectory: File, args: Seq[String], log: sbt.
             case Name(inputName) => Some(inputName) }
         ).headOption.getOrElse(Some(Defaults.name))
 
-        val templateValue = args.filter(!Seq(orgValue, nameValue).contains(_)).map(s => Some(s)).headOption.getOrElse(None)
+        val filtered = args.filter({
+            case Org(inputOrg) => false
+            case Name(inputName) => false
+            case _ => true
+        })
+
+        val templateValue = filtered.map(s => Some(s)).headOption.getOrElse(None)
 
         (orgValue, nameValue, templateValue)
     }
@@ -61,14 +67,14 @@ object Npt extends Plugin {
             val nptArgs: Seq[String] = spaceDelimited("<arg>").parsed
             println(nptArgs)
 
-            implicit val execContext = NptExecutionContext(baseDirectory.value, nptArgs, streams.value.log)
+            implicit val execContext = new NptExecutionContext(baseDirectory.value, nptArgs, streams.value.log)
             createSrcDirectories()
             createBuildSbt()
             copyTemplate()
         },
         nptCopy := {
             val nptArgs: Seq[String] = spaceDelimited("<arg>").parsed
-            implicit val execContext = NptExecutionContext(baseDirectory.value, nptArgs, streams.value.log)
+            implicit val execContext = new NptExecutionContext(baseDirectory.value, nptArgs, streams.value.log)
             copyTemplate()
         }
     )
