@@ -94,7 +94,7 @@ object Npt extends Plugin {
         }
         
         if (folderToCopy.isDefined) {
-            IO.copyDirectory(folderToCopy, es.baseDirectory)
+            IO.copyDirectory(folderToCopy.get, es.baseDirectory)
         } else {
             log.info(s"Not copying a template")
         }
