@@ -1,0 +1,55 @@
+# use glob syntax.
+syntax: glob
+*.ser
+*.class
+*~
+*.bak
+#*.off
+*.old
+
+# ECLIPSE
+.settings
+.classpath
+.project
+.manager
+.scala_dependencies
+
+# SBT
+.cache/
+.history/
+.lib/
+dist/*
+target/
+lib_managed/
+src_managed/
+project/boot/
+project/plugins/project/
+
+# SCALA-IDE
+.scala_dependencies
+.worksheet
+
+# IDEA
+*.iml
+*.ipr
+*.iws
+.idea/
+
+# BUILDING
+target
+null
+tmp*
+temp*
+dist
+test-output
+build.log
+
+# SCM
+.svn
+.CVS
+.hg*
+
+# local config
+*-local.properties
+*-local.xml
+local.conf
