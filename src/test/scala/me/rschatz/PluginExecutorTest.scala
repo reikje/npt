@@ -69,12 +69,11 @@ class PluginExecutorTest extends FreeSpec with Matchers with BeforeAndAfterEach 
             }
 
             "should download and extract archives" in {
-                val context = NptExecutionContext(baseDirectory)
+                val context = NptExecutionContext(baseDirectory = baseDirectory, tempFolder = baseDirectory)
                 val executor = new PluginExecutor(context)
 
                 executor.downloadTemplate(
-                    url = "http://search.maven.org/remotecontent?filepath=javax/jms/javax.jms-api/2.0/javax.jms-api-2.0.jar",
-                    tempFolder = baseDirectory
+                    "http://search.maven.org/remotecontent?filepath=javax/jms/javax.jms-api/2.0/javax.jms-api-2.0.jar"
                 )
 
                 val downloadDir = new File(baseDirectory, Defaults.downloadDirName)
@@ -83,6 +82,50 @@ class PluginExecutorTest extends FreeSpec with Matchers with BeforeAndAfterEach 
 
                 val metaInfDir = new File(downloadDir, "META-INF")
                 Files.exists(metaInfDir.toPath) should be (true)
+            }
+
+            "should figure out if a directory exists from templateFolder function" in {
+                val context = NptExecutionContext(baseDirectory)
+                val executor = new PluginExecutor(context)
+                executor.templateFolder(baseDirectory) should be (Some(baseDirectory))
+                executor.templateFolder(new File(baseDirectory, "FOO")) should be (None)
+            }
+
+            "should figure out the template folder based on default folder property" in {
+                val subDir = new File(baseDirectory, "DEFAULT_FOLDER")
+                Files.createDirectory(subDir.toPath)
+
+                var context = NptExecutionContext(baseDirectory = baseDirectory, args = List("DEFAULT_FOLDER"))
+                var executor = new PluginExecutor(context)
+
+                sys.props += Defaults.templateFolderProperty -> baseDirectory.getPath
+
+                executor.fromDefaultFolder() should be (Some(subDir))
+
+                context = NptExecutionContext(baseDirectory = baseDirectory, args = List("NON_EXISTING"))
+                executor = new PluginExecutor(context)
+                executor.fromDefaultFolder() should be (None)
+
+                sys.props -= Defaults.templateFolderProperty
+            }
+
+            "should figure out the template folder based on default template property" in {
+                val context = NptExecutionContext(baseDirectory = baseDirectory, tempFolder = baseDirectory)
+                val executor = new PluginExecutor(context)
+
+                executor.fromDefaultTemplate() should be (None)
+
+                sys.props.update(Defaults.defaultTemplateProperty, "http://search.maven.org/remotecontent?filepath=javax/jms/javax.jms-api/2.0/javax.jms-api-2.0.jar")
+                executor.fromDefaultTemplate() should be (Some(new File(baseDirectory, Defaults.downloadDirName)))
+
+                sys.props.update(Defaults.defaultTemplateProperty, baseDirectory.getPath)
+                executor.fromDefaultTemplate() should be (Some(baseDirectory))
+
+                sys.props.update(Defaults.defaultTemplateProperty, "http://search.maven.org/remotecontent?filepath=javax/jms/javax.jms-api/20000000.0/javax.jms-api-2.0.jar")
+                executor.fromDefaultTemplate() should be (None)
+
+                sys.props.update(Defaults.defaultTemplateProperty, new File(baseDirectory, "NON-EXISTING").getPath)
+                executor.fromDefaultTemplate() should be (None)
             }
         }
     }

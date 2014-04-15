@@ -21,9 +21,9 @@ class NptExecutionContextTest extends FreeSpec with Matchers {
         }
 
         "when created with args " - {
-            val context = NptExecutionContext(new File("."), Seq("name:foo", "org:bar", "whatever"), new PrintLogger)
+            val context = NptExecutionContext(baseDirectory = new File("."), args = Seq("name:foo", "org:bar", "whatever"))
             "should parse properly" in {
-                val (orgValue, nameValue, templateValue) = context.inputArgs()
+                val (_, _, templateValue) = context.inputArgs()
                 templateValue should be (Some("whatever"))
             }
         }

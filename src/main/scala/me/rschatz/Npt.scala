@@ -30,8 +30,8 @@ object Defaults {
     val downloadDirName = "nptdownloads"
     val buildFileName = "build.sbt"
 
-    val defaultTemplate = "SBT.NPT.DEFAULT.TEMPLATE"
-    val templateFolder = "SBT.NPT.TEMPLATE.FOLDER"
+    val defaultTemplateProperty = "SBT.NPT.DEFAULT.TEMPLATE"
+    val templateFolderProperty = "SBT.NPT.TEMPLATE.FOLDER"
 }
 
 trait NptLogger {
@@ -46,13 +46,14 @@ class WrappedSBTLogger(log: sbt.Logger) extends NptLogger {
     def warn(msg: String) = log.warn(msg)
 }
 
-class PrintLogger() extends NptLogger {
-    def debug(msg: String) = print(msg)
-    def info(msg: String) = print(msg)
-    def warn(msg: String) = print(msg)
+class BlackholeLogger() extends NptLogger {
+    def debug(msg: String) = {}
+    def info(msg: String) = {}
+    def warn(msg: String) = {}
 }
 
-case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log: NptLogger = new PrintLogger) {
+case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log: NptLogger = new BlackholeLogger,
+                               tempFolder: File = IO.temporaryDirectory) {
 
     def inputArgs() = {
         val Org   = """org\:(\S+)""".r
@@ -130,11 +131,11 @@ class PluginExecutor(val es: NptExecutionContext) {
         val log = es.log
 
         for (props <- List(sys.env, sys.props)) {
-            val defaultTemplateName = props.get(defaultTemplate)
-            if (defaultTemplateName.isDefined) {
-                val defaultTemplateNameValue = defaultTemplateName.get
-                log.info(s"Trying $defaultTemplate ($defaultTemplateNameValue)")
-                return downloadTemplate(defaultTemplateNameValue)
+            val defaultTemplate = props.get(defaultTemplateProperty)
+            if (defaultTemplate.isDefined) {
+                val dtValue = defaultTemplate.get
+                log.info(s"Trying $defaultTemplateProperty ($dtValue)")
+                return downloadTemplate(dtValue) orElse templateFolder(new File(dtValue))
             }
         }
         None
@@ -146,7 +147,7 @@ class PluginExecutor(val es: NptExecutionContext) {
         val log = es.log
 
         for (props <- List(sys.env, sys.props)) {
-            val templateFolderName = props.get(Defaults.templateFolder)
+            val templateFolderName = props.get(Defaults.templateFolderProperty)
             if (templateFolderName.isDefined) {
                 val templateFolderNameValue = templateFolderName.get
                 log.info(s"Trying $Defaults.templateFolder ($templateFolderNameValue)")
@@ -178,13 +179,13 @@ class PluginExecutor(val es: NptExecutionContext) {
         }
     }
 
-    def downloadTemplate(url: String, tempFolder: File = IO.temporaryDirectory): Option[File] = {
+    def downloadTemplate(url: String): Option[File] = {
         val log = es.log
 
         def download(url: String): Try[File] = {
             url match {
                 case DownloadableArchive(protocol, extension) =>
-                    val targetFolder = new File(tempFolder, downloadDirName)
+                    val targetFolder = new File(es.tempFolder, downloadDirName)
                     if (targetFolder.exists()) {
                         log.info(s"Deleting pre-existing temporary folder")
                         IO.delete(targetFolder)
