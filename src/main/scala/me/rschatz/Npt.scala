@@ -8,6 +8,7 @@ import scala.util.matching.Regex
 import java.lang.Boolean._
 import java.net.URL
 import scala.util.{Success, Failure, Try}
+import Defaults._
 
 /**
  * A SBT plugin to initialize new projects based on existing project templates.
@@ -17,6 +18,20 @@ import scala.util.{Success, Failure, Try}
 object Defaults {
     val organization = "default.organization"
     val name = "default-name"
+
+    val DownloadableArchive = "^(https?|ftp|file)://.+\\.(gz|zip|jar)$".r
+
+    val sourceDirName = "src"
+    val mainDirName = "main"
+    val testDirName = "test"
+    val scalaDirName = "scala"
+    val javaDirName = "java"
+    val resourcesDirName = "resources"
+    val downloadDirName = "nptdownloads"
+    val buildFileName = "build.sbt"
+
+    val defaultTemplate = "SBT.NPT.DEFAULT.TEMPLATE"
+    val templateFolder = "SBT.NPT.TEMPLATE.FOLDER"
 }
 
 trait NptLogger {
@@ -35,10 +50,6 @@ class PrintLogger() extends NptLogger {
     def debug(msg: String) = print(msg)
     def info(msg: String) = print(msg)
     def warn(msg: String) = print(msg)
-}
-
-class Foo(input:Int) {
-    def this() = { this( 0 ) }
 }
 
 case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log: NptLogger = new PrintLogger) {
@@ -68,18 +79,6 @@ case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log
 }
 
 class PluginExecutor(val es: NptExecutionContext) {
-    private val DownloadableArchive = "^(https?|ftp|file)://.+\\.(gz|zip|jar)$".r
-
-    private val sourceDirName = "src"
-    private val mainDirName = "main"
-    private val testDirName = "test"
-    private val scalaDirName = "scala"
-    private val javaDirName = "java"
-    private val resourcesDirName = "resources"
-    private val buildFileName = "build.sbt"
-
-    private val defaultTemplate = "SBT.NPT.DEFAULT.TEMPLATE"
-    private val templateFolder = "SBT.NPT.TEMPLATE.FOLDER"
 
     def copyTemplate(): Unit = {
         val log = es.log
@@ -147,10 +146,10 @@ class PluginExecutor(val es: NptExecutionContext) {
         val log = es.log
 
         for (props <- List(sys.env, sys.props)) {
-            val templateFolderName = props.get(templateFolder)
+            val templateFolderName = props.get(Defaults.templateFolder)
             if (templateFolderName.isDefined) {
                 val templateFolderNameValue = templateFolderName.get
-                log.info(s"Trying $templateFolder ($templateFolderNameValue)")
+                log.info(s"Trying $Defaults.templateFolder ($templateFolderNameValue)")
                 val folder = new File(templateFolderNameValue)
                 if (folder.exists()) {
                     val (_, _, templateNameOption) = es.inputArgs()
@@ -179,14 +178,13 @@ class PluginExecutor(val es: NptExecutionContext) {
         }
     }
 
-    def downloadTemplate(url: String): Option[File] = {
+    def downloadTemplate(url: String, tempFolder: File = IO.temporaryDirectory): Option[File] = {
         val log = es.log
 
         def download(url: String): Try[File] = {
             url match {
                 case DownloadableArchive(protocol, extension) =>
-                    val workFolder = "NPT-DOWNLOAD"
-                    val targetFolder = new File(IO.temporaryDirectory, workFolder)
+                    val targetFolder = new File(tempFolder, downloadDirName)
                     if (targetFolder.exists()) {
                         log.info(s"Deleting pre-existing temporary folder")
                         IO.delete(targetFolder)

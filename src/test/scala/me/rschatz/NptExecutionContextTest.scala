@@ -11,7 +11,6 @@ import java.io.File
 class NptExecutionContextTest extends FreeSpec with Matchers {
     "A NptExecutionContext" - {
         "when created without args " - {
-            val f = new Foo()
             val context = NptExecutionContext(new File("."))
             "should parse to defaults" in {
                 val (orgValue, nameValue, templateValue) = context.inputArgs()
