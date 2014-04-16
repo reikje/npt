@@ -124,8 +124,7 @@ If invoking `npt` with a path denoting a directory on the local file system, the
 	
 ### Specifying a default template as a system property or environment variable
 
-A default template can be specified as a System property (when running SBT) or as a environment variable. The name is `SBT_NPT_DEFAULT_TEMPLATE` and the value is either a URL denoting an archive that 
-can be downloaded (zip, gz or jar) or a path denoting a directory on the local file system. If you have set SBT_NPT_DEFAULT_TEMPLATE you don't specify an additional argument when invoking `npt`.
+A default template can be specified as a system property (when running SBT) or as a environment variable. The name is `SBT_NPT_DEFAULT_TEMPLATE` and the value has to be a URL denoting an archive (zip, gz or jar) that can be downloaded OR a path denoting an existing directory on the local file system. If you have SBT_NPT_DEFAULT_TEMPLATE set you don't have to specify an additional argument when invoking `npt`.
 
     $ mkdir newproject
 	$ cd newproject
@@ -137,3 +136,33 @@ can be downloaded (zip, gz or jar) or a path denoting a directory on the local f
     $ [info] Trying SBT_NPT_DEFAULT_TEMPLATE (D:\test)
     $ [info] URL: D:\test does not denote a downloadable archive
     $ [info] Existing folder D:\test
+	
+### Specifying a default folder as a system property or environment variable
+
+Often you have a bunch of project templates to choose from, i.e. a api project template, a web project template and so on. For easy access to these project templates you can use the `SBT_NPT_TEMPLATE_FOLDER` system property or a environment variable of the same name. `SBT_NPT_TEMPLATE_FOLDER` must be an existing folder on the local file system. After specifying `SBT_NPT_TEMPLATE_FOLDER` you execute `npt` and specify the name of a sub-folder inside `SBT_NPT_TEMPLATE_FOLDER`. Let's say you have created the following folders.
+
+    |- /opt/sbt/templates 
+					|- api					
+					|- web
+					|- service
+
+Then you would create a new `api` project like this.
+					
+    $ mkdir newproject
+	$ cd newproject
+    $ export SBT_NPT_TEMPLATE_FOLDER=/opt/sbt/templates
+	$ npt api
+	$ [info] Creating source folders
+	$ [info] Creating build.sbt
+	$ [info] Finding template to copy
+	$ [info] Trying SBT_NPT_TEMPLATE_FOLDER (/opt/sbt/templates)
+	$ [info] Existing folder /opt/sbt/templates/api
+	
+## Customization
+
+Similar to the np plug-in you can customize some values in the build.sbt file that gets generated. For full customization you can always have your own build.sbt file in the project template that you are applying, which will overwrite the generated build.sbt file. The following values can be customized in the default generated build.sbt file.
+
+| Setting       | Default       | Customization  |
+| ------------- |:-------------:| -----:|
+| name          | default.organization | npt name:newapp |
+| organization  | default-name      | npt org:me.company |
