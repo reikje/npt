@@ -12,7 +12,7 @@ scalaVersion := "2.10.4"
 
 publishMavenStyle := false
 
-bintrayPublishSettings
+seq(bintrayPublishSettings:_*)
 
 repository in bintray := "sbt-plugins"
 
