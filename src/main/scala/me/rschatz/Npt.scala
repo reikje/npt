@@ -112,14 +112,15 @@ class PluginExecutor(val es: NptExecutionContext) {
 
 
     def fromDefaultTemplate(): Option[File] = {
-        // check SBT_NPT_DEFAULT_TEMPLATE
+        import Defaults._
         val log = es.log
 
         for (props <- List(sys.env, sys.props)) {
-            val defaultTemplate = props.get(defaultTemplateProperty)
+            val propertyName = defaultTemplateProperty
+            val defaultTemplate = props.get(propertyName)
             if (defaultTemplate.isDefined) {
                 val dtValue = defaultTemplate.get
-                log.info(s"Trying $defaultTemplateProperty ($dtValue)")
+                log.info(s"Trying $propertyName ($dtValue)")
                 return downloadTemplate(dtValue) orElse templateFolder(new File(dtValue))
             }
         }
@@ -127,15 +128,14 @@ class PluginExecutor(val es: NptExecutionContext) {
     }
 
     def fromDefaultFolder(): Option[File] = {
-        // check SBT_NPT_TEMPLATE_FOLDER
-        // if SBT_NPT_TEMPLATE_FOLDER => get template name from args and copy this template
+        import Defaults._
         val log = es.log
 
         for (props <- List(sys.env, sys.props)) {
-            val templateFolderName = props.get(Defaults.templateFolderProperty)
+            val templateFolderName = props.get(templateFolderProperty)
             if (templateFolderName.isDefined) {
                 val templateFolderNameValue = templateFolderName.get
-                log.info(s"Trying $Defaults.templateFolder ($templateFolderNameValue)")
+                log.info(s"Trying $templateFolderProperty ($templateFolderNameValue)")
                 val folder = new File(templateFolderNameValue)
                 if (folder.exists()) {
                     val (_, _, templateNameOption) = es.inputArgs()
