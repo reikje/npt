@@ -4,7 +4,7 @@ A SBT plug-in to create new projects layouts based on existing project templates
 
 ## Motivation
 
-The np-plugin is great to initialize new SBT projects. This plug-in goes a bit further because you can copy a pre-existing templates on top of your project structure. So let's say your default project layout looks like this:
+The [np plug-in](https://github.com/softprops/np) is great to initialize new SBT projects. This plug-in goes a bit further because you can copy a pre-existing templates on top of your project structure. So let's say your default project layout looks like this:
 
     |
     |- src
@@ -160,7 +160,7 @@ Then you would create a new `api` project like this.
 	
 ## Customization
 
-Similar to the np plug-in you can customize some values in the build.sbt file that gets generated. For full customization you can always have your own build.sbt file in the project template that you are applying, which will overwrite the generated build.sbt file. The following values can be customized in the default generated build.sbt file.
+Similar to the [np plug-in](https://github.com/softprops/np) you can customize some values in the build.sbt file that gets generated. For full customization you can always have your own build.sbt file in the project template that you are applying, which will overwrite the generated build.sbt file. The following values can be customized in the default generated build.sbt file.
 
 | Setting       | Default              | Customization      |
 | ------------- |----------------------|--------------------|
