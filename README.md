@@ -71,7 +71,7 @@ Often you want to install this as a global plug-in.
 
 If you don't already have one, create an `~/.sbt/0.13/plugins` directory. And inside of it, create a file `npt.sbt` containing the line
 
-    addSbtPlugin("me.rschatz" % "npt" % "0.1")
+    addSbtPlugin("me.rschatz" % "npt" % "0.1.0")
     
 This will make `nptSettings` globally visible to your project definitions.
 
