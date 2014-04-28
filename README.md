@@ -4,7 +4,7 @@ A SBT plug-in to create new projects layouts based on existing project templates
 
 ## Motivation
 
-The [np plug-in](https://github.com/softprops/np) is great to initialize new SBT projects. This plug-in goes a bit further because you can copy a pre-existing templates on top of your project structure. So let's say your default project layout looks like this:
+The [np plug-in](https://github.com/softprops/np) is a great way to initialize new SBT projects. This plug-in also let's you initialize project skeletons for new projects that are build with SBT. On top, it allows you to copy a pre-existing template into your new project structure. So let's say whenever you create a new project, you want the project layout to look like this:
 
     |
     |- src
@@ -27,7 +27,7 @@ The [np plug-in](https://github.com/softprops/np) is great to initialize new SBT
 	|	- fabfile.py
 	|build.sbt
 	
-And your default build.sbt is this:
+For your default build.sbt you want it to contain the following rows:
 
     organization := "com.company"
 
@@ -61,7 +61,7 @@ And your default build.sbt is this:
 		"org.scalatest" %% "scalatest" % "2.1.3" % "test"
 	}
 	
-You could always create a default SBT project and manually tweak everything, but that would be tedious. This plug-in aims to make it simpler for you.
+Of course you could always create a default SBT project and manually tweak everything - but that would be tedious. This plug-in aims to make it simpler for you.
 
 ## Installation
 
