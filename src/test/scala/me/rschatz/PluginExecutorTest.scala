@@ -52,7 +52,7 @@ class PluginExecutorTest extends FreeSpec with Matchers with BeforeAndAfterEach 
           }
         })
 
-        dirCount should be(10)
+        dirCount shouldBe 10
       }
 
       "should create the build.sbt file" in {
@@ -84,8 +84,8 @@ class PluginExecutorTest extends FreeSpec with Matchers with BeforeAndAfterEach 
       "should figure out if a directory exists from templateFolder function" in {
         val context = NptExecutionContext(baseDirectory)
         val executor = new PluginExecutor(context)
-        executor.templateFolder(baseDirectory) should be(Some(baseDirectory))
-        executor.templateFolder(new File(baseDirectory, "FOO")) should be(None)
+        executor.templateFolder(baseDirectory) shouldBe Some(baseDirectory)
+        executor.templateFolder(new File(baseDirectory, "FOO")) shouldBe None
       }
 
       "should figure out the template folder based on default folder property" in {
@@ -97,11 +97,11 @@ class PluginExecutorTest extends FreeSpec with Matchers with BeforeAndAfterEach 
 
         sys.props += Defaults.templateFolderProperty -> baseDirectory.getPath
 
-        executor.fromDefaultFolder() should be(Some(subDir))
+        executor.fromDefaultFolder() shouldBe Some(subDir)
 
         context = NptExecutionContext(baseDirectory = baseDirectory, args = List("NON_EXISTING"))
         executor = new PluginExecutor(context)
-        executor.fromDefaultFolder() should be(None)
+        executor.fromDefaultFolder() shouldBe None
 
         sys.props -= Defaults.templateFolderProperty
       }
