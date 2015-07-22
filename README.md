@@ -67,18 +67,12 @@ Of course you could always create a default SBT project and manually tweak every
 
 Often you want to install this as a global plug-in.
 
-### For sbt 0.13+
+### For sbt 0.13.5+
 
 If you don't already have one, create an `~/.sbt/0.13/plugins` directory. And inside of it, create a file `npt.sbt` containing the line
 
-    addSbtPlugin("me.rschatz" % "npt" % "0.1.0")
+    addSbtPlugin("me.rschatz" % "npt" % "0.2.0")
     
-This will make `nptSettings` globally visible to your project definitions.
-
-Now you should globally mix in `nptSettings`. Create a file under `~/.sbt/0.13` called `npt.sbt` containing the line
-
-    seq(me.rschatz.Npt.nptSettings: _*)
-	
 ## Usage
 
 There are several ways to use the npt plug-in.
