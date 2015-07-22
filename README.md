@@ -65,13 +65,13 @@ Of course you could always create a default SBT project and manually tweak every
 
 ## Installation
 
-Often you want to install this as a global plug-in.
+Often you want to install this as a global plug-in. This is an `AutoPlugin` which requires SBT 0.13.5 or higher.
 
 ### For sbt 0.13.5+
 
 If you don't already have one, create an `~/.sbt/0.13/plugins` directory. And inside of it, create a file `npt.sbt` containing the line
 
-    addSbtPlugin("me.rschatz" % "npt" % "0.2.0")
+    addSbtPlugin("me.rschatz" % "npt" % "0.2.0") 
     
 ## Usage
 
