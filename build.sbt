@@ -1,27 +1,23 @@
 import bintray.Keys._
 
-sbtPlugin := true
+lazy val commonSettings = Seq(
+  version in ThisBuild := "0.2.0",
+  organization in ThisBuild := "me.rschatz",
+  libraryDependencies in ThisBuild ++= Seq(
+    "ch.qos.logback" % "logback-classic" % "1.1.3",
+    "org.scalatest" %% "scalatest" % "2.2.5" % "test",
+    "org.mockito" % "mockito-core" % "1.10.19" % "test"
+  )
+)
 
-organization := "me.rschatz"
-
-name := "npt"
-
-version := "0.1.0"
-
-scalaVersion := "2.10.4"
-
-publishMavenStyle := false
-
-seq(bintrayPublishSettings:_*)
-
-repository in bintray := "sbt-plugins"
-
-// This is an example.  bintray-sbt requires licenses to be specified
-// (using a canonical name).
-licenses += ("Apache-2.0", url("http://www.apache.org/licenses/LICENSE-2.0.html"))
-
-bintrayOrganization in bintray := None
-
-libraryDependencies += "org.scalatest" %% "scalatest" % "2.1.0" % "test"
-
-libraryDependencies += "org.mockito" % "mockito-core" % "1.9.5" % "test"
+lazy val root = (project in file(".")).
+  settings(commonSettings ++ bintrayPublishSettings: _*).
+  settings(
+    sbtPlugin := true,
+    name := "npt",
+    description := "Create new project layouts which can be based on templates",
+    licenses += ("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html")),
+    publishMavenStyle := false,
+    repository in bintray := "sbt-plugins",
+    bintrayOrganization in bintray := None
+  )
