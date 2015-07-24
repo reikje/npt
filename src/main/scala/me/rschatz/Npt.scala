@@ -88,39 +88,44 @@ case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log
   }
 }
 
-class PluginExecutor(val es: NptExecutionContext) {
+abstract class FolderFinder(log: NptLogger = NptLogger.empty) {
+  protected val fileActions: FileActions = new FileActions(log)
 
-  def copyTemplate(): Unit = {
-    val log = es.log
-    log.info(s"Finding template to copy")
+  def get: Option[File]
+}
 
-    val folderToCopy = fromDefaultTemplate() orElse fromDefaultFolder() orElse fromInputArgs()
-    folderToCopy.ifNone {
-      log.info(s"Not copying a template")
-    }.foreach {
-      f => IO.copyDirectory(f, es.baseDirectory)
-    }
-  }
-
-  def fromInputArgs(): Option[File] = {
-    val log = es.log
-
-    val (_, _, templateName) = es.inputArgs()
+/**
+ * A [[FolderFinder]] that returns potential template [[java.io.File]]s based on input arguments to the '''npt''' task.
+ * Accepted input args are:
+ *
+ *   1. a downloadable archive
+ *   2. the path to a folder on the local file system
+ *
+ * @return Option[File]
+ */
+class FromInputArgs(templateName: Option[String], tempFolder: File = IO.temporaryDirectory, log: NptLogger = NptLogger.empty) extends FolderFinder(log) {
+  override def get: Option[sbt.File] = {
     templateName.flatMap {
       t =>
         log.info(s"Trying template name or location from input ($t)")
 
         t match {
-          case DownloadableArchive(protocol, extension) => downloadTemplate(t)
-          case _ => templateFolder(new File(t))
+          case DownloadableArchive(protocol, extension) => fileActions.downloadTemplate(t, tempFolder)
+          case _ => fileActions.templateFolder(new File(t))
         }
     }
   }
+}
 
-
-  def fromDefaultTemplate(): Option[File] = {
+/**
+ * A [[FolderFinder]] which potentially returns a [[java.io.File]] if the environment or system property
+ * '''SBT_NPT_DEFAULT_TEMPLATE''' is set.
+ *
+ * @return Option[File]
+ */
+class FromTemplateProperty(tempFolder: File = IO.temporaryDirectory, log: NptLogger = NptLogger.empty) extends FolderFinder(log) {
+  override def get: Option[sbt.File] = {
     import Defaults._
-    val log = es.log
 
     for (props <- List(sys.env, sys.props)) {
       val propertyName = defaultTemplateProperty
@@ -128,16 +133,22 @@ class PluginExecutor(val es: NptExecutionContext) {
       if (defaultTemplate.isDefined) {
         val dtValue = defaultTemplate.get
         log.info(s"Trying $propertyName ($dtValue)")
-        return downloadTemplate(dtValue) orElse templateFolder(new File(dtValue))
+        return fileActions.downloadTemplate(dtValue, tempFolder) orElse fileActions.templateFolder(new File(dtValue))
       }
     }
     None
   }
+}
 
-  def fromDefaultFolder(): Option[File] = {
+/**
+ * A [[FolderFinder]] which potentially returns a [[java.io.File]] if the environment or system property
+ * '''SBT_NPT_TEMPLATE_FOLDER''' is set and the name of a template sub-folder is given.
+ *
+ * @return Option[File]
+ */
+class FromFolderProperty(templateNameOption: Option[String], log: NptLogger = NptLogger.empty) extends FolderFinder(log) {
+  override def get: Option[sbt.File] = {
     import Defaults._
-    val log = es.log
-
     for (props <- List(sys.env, sys.props)) {
       val templateFolderName = props.get(templateFolderProperty)
       if (templateFolderName.isDefined) {
@@ -145,10 +156,9 @@ class PluginExecutor(val es: NptExecutionContext) {
         log.info(s"Trying $templateFolderProperty ($templateFolderNameValue)")
         val folder = new File(templateFolderNameValue)
         if (folder.exists()) {
-          val (_, _, templateNameOption) = es.inputArgs()
           if (templateNameOption.isDefined) {
             val templateName = templateNameOption.get
-            return templateFolder(new File(folder, templateName))
+            return fileActions.templateFolder(new File(folder, templateName))
           } else {
             log.info(s"Missing name of a template in folder $templateFolderNameValue")
           }
@@ -159,25 +169,14 @@ class PluginExecutor(val es: NptExecutionContext) {
     }
     None
   }
+}
 
-  def templateFolder(directory: File): Option[File] = {
-    val log = es.log
-    if (directory.isDirectory) {
-      log.info(s"Existing folder $directory")
-      Some(directory)
-    } else {
-      log.info(s"$directory does not exist or is not a directory. Skipping")
-      None
-    }
-  }
-
-  def downloadTemplate(url: String): Option[File] = {
-    val log = es.log
-
+class FileActions(log: NptLogger = NptLogger.empty) {
+  def downloadTemplate(url: String, tempFolder: File = IO.temporaryDirectory): Option[File] = {
     def download(url: String): Try[File] = {
       url match {
         case DownloadableArchive(protocol, extension) =>
-          val targetFolder = new File(es.tempFolder, downloadDirName)
+          val targetFolder = new File(tempFolder, downloadDirName)
           if (targetFolder.exists()) {
             log.info(s"Deleting pre-existing temporary folder")
             IO.delete(targetFolder)
@@ -210,11 +209,53 @@ class PluginExecutor(val es: NptExecutionContext) {
     }
   }
 
+  def templateFolder(directory: File): Option[File] = {
+    if (directory.isDirectory) {
+      log.info(s"Existing folder $directory")
+      Some(directory)
+    } else {
+      log.info(s"$directory does not exist or is not a directory. Skipping")
+      None
+    }
+  }
+
+  def sourceDirs(baseDirectory: File) = {
+    Seq(sourceDirName).flatMap({
+      rootDir => Seq(mainDirName, testDirName).flatMap({
+        subRootDir => Seq(scalaDirName, javaDirName, resourcesDirName).map({
+          dirName => new File(new File(new File(new File(baseDirectory.toString), rootDir), subRootDir), dirName)
+        })
+      })
+    })
+  }
+}
+
+class PluginExecutor(val es: NptExecutionContext) {
+  private val (_, _, templateName) = es.inputArgs()
+  private val finders: Seq[FolderFinder] = List(
+    new FromTemplateProperty(log = es.log),
+    new FromFolderProperty(templateName, log = es.log),
+    new FromInputArgs(templateName, log = es.log)
+  )
+
+  def copyTemplate(): Unit = {
+    val log = es.log
+    log.info(s"Finding template to copy")
+
+    val folderToCopy = finders.toIterator.map(_.get).find(_.isDefined).flatten
+    folderToCopy.ifNone {
+      log.info(s"Not copying a template")
+    }.foreach {
+      f => IO.copyDirectory(f, es.baseDirectory)
+    }
+  }
+
   def createSrcDirectories() = {
     val log = es.log
     log.info("Creating source folders")
 
-    IO.createDirectories(sourceDirs(es.baseDirectory))
+    val fileActions = new FileActions()
+    IO.createDirectories(fileActions.sourceDirs(es.baseDirectory))
   }
 
   def createBuildSbt() = {
@@ -234,16 +275,6 @@ class PluginExecutor(val es: NptExecutionContext) {
         "scalaVersion := \"2.10.5\""
       )
     )
-  }
-
-  def sourceDirs(baseDirectory: File) = {
-    Seq(sourceDirName).flatMap({
-      rootDir => Seq(mainDirName, testDirName).flatMap({
-        subRootDir => Seq(scalaDirName, javaDirName, resourcesDirName).map({
-          dirName => new File(new File(new File(new File(baseDirectory.toString), rootDir), subRootDir), dirName)
-        })
-      })
-    })
   }
 }
 

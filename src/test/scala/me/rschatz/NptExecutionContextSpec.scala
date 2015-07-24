@@ -8,7 +8,7 @@ import java.io.File
  *
  * @author rschatz
  */
-class NptExecutionContextTest extends FreeSpec with Matchers {
+class NptExecutionContextSpec extends FreeSpec with Matchers {
   "A NptExecutionContext" - {
     "when created without args " - {
       val context = NptExecutionContext(new File("."))
