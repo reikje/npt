@@ -105,17 +105,15 @@ class PluginExecutor(val es: NptExecutionContext) {
   def fromInputArgs(): Option[File] = {
     val log = es.log
 
-    val (_, _, templateNameOption) = es.inputArgs()
-    if (templateNameOption.isDefined) {
-      val templateName = templateNameOption.get
-      log.info(s"Trying template name or location from input ($templateName)")
+    val (_, _, templateName) = es.inputArgs()
+    templateName.flatMap {
+      t =>
+        log.info(s"Trying template name or location from input ($t)")
 
-      templateName match {
-        case DownloadableArchive(protocol, extension) => downloadTemplate(templateName)
-        case _ => templateFolder(new File(templateName))
-      }
-    } else {
-      None
+        t match {
+          case DownloadableArchive(protocol, extension) => downloadTemplate(t)
+          case _ => templateFolder(new File(t))
+        }
     }
   }
 
