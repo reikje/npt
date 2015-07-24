@@ -42,12 +42,19 @@ object Defaults {
   }
 }
 
+/**
+ * Another logging abstraction.
+ */
 trait NptLogger {
   def debug(msg: String) = {}
   def info(msg: String) = {}
   def warn(msg: String) = {}
 }
 
+/**
+ * Wraps the SBT logger.
+ * @param log a [[sbt.Logger]]
+ */
 class WrappedSBTLogger(log: sbt.Logger) extends NptLogger {
   override def debug(msg: String) = log.debug(msg)
   override def info(msg: String) = log.info(msg)
@@ -56,9 +63,22 @@ class WrappedSBTLogger(log: sbt.Logger) extends NptLogger {
 
 object NptLogger {
   object Blackhole extends NptLogger
+
+  /**
+   * Returns a [[NptLogger]] that doesn't log anything.
+   * @return [[NptLogger]]
+   */
   def empty = Blackhole
 }
 
+/**
+ * Wraps the context in which the plugin is executing.
+ *
+ * @param baseDirectory root directory
+ * @param args additional input arguments
+ * @param log a [[NptLogger]]
+ * @param tempFolder folder for temporary downloads
+ */
 case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log: NptLogger = NptLogger.empty,
                                tempFolder: File = IO.temporaryDirectory) {
 
@@ -171,7 +191,21 @@ class FromFolderProperty(templateNameOption: Option[String], log: NptLogger = Np
   }
 }
 
+/**
+ * Wraps a bunch of useful file functions.
+ * @param log a [[NptLogger]]
+ */
 class FileActions(log: NptLogger = NptLogger.empty) {
+
+  /**
+   * Downloads and extracts the archive denoted by the given '''url''' and returns the directory ([[File]]) that
+   * contains the extracted content. Returns '''None''' if the '''url''' is not a downloadable archive, or the file
+   * cannot be downloaded.
+   *
+   * @param url a URL to a archive file
+   * @param tempFolder temporary download folder
+   * @return Optio[File]
+   */
   def downloadTemplate(url: String, tempFolder: File = IO.temporaryDirectory): Option[File] = {
     def download(url: String): Try[File] = {
       url match {
@@ -209,6 +243,11 @@ class FileActions(log: NptLogger = NptLogger.empty) {
     }
   }
 
+  /**
+   * Wraps the given [[File]] into an [[Option]] that will be defined if it is a directory.
+   * @param directory any File
+   * @return Option[File]
+   */
   def templateFolder(directory: File): Option[File] = {
     if (directory.isDirectory) {
       log.info(s"Existing folder $directory")
@@ -219,7 +258,12 @@ class FileActions(log: NptLogger = NptLogger.empty) {
     }
   }
 
-  def sourceDirs(baseDirectory: File) = {
+  /**
+   * Returns a sequence of files representing the default directory layout.
+   * @param baseDirectory the root folder
+   * @return Seq[File]
+   */
+  def defaultLayout(baseDirectory: File): Seq[File] = {
     Seq(sourceDirName).flatMap({
       rootDir => Seq(mainDirName, testDirName).flatMap({
         subRootDir => Seq(scalaDirName, javaDirName, resourcesDirName).map({
@@ -230,6 +274,11 @@ class FileActions(log: NptLogger = NptLogger.empty) {
   }
 }
 
+/**
+ * Contains all steps that the [[sbt.AutoPlugin]] executes.
+ *
+ * @param es the context of execution
+ */
 class PluginExecutor(val es: NptExecutionContext) {
   private val (_, _, templateName) = es.inputArgs()
   private val finders: Seq[FolderFinder] = List(
@@ -238,6 +287,10 @@ class PluginExecutor(val es: NptExecutionContext) {
     new FromInputArgs(templateName, log = es.log)
   )
 
+  /**
+   * Tries to find a template using different lookup methods. If a template is found, it is copyied into the root
+   * folder.
+   */
   def copyTemplate(): Unit = {
     val log = es.log
     log.info(s"Finding template to copy")
@@ -250,15 +303,21 @@ class PluginExecutor(val es: NptExecutionContext) {
     }
   }
 
-  def createSrcDirectories() = {
+  /**
+   * Creates the default project layout inside the root folder.
+   */
+  def createSrcDirectories(): Unit = {
     val log = es.log
     log.info("Creating source folders")
 
     val fileActions = new FileActions()
-    IO.createDirectories(fileActions.sourceDirs(es.baseDirectory))
+    IO.createDirectories(fileActions.defaultLayout(es.baseDirectory))
   }
 
-  def createBuildSbt() = {
+  /**
+   * Creates the default '''build.sbt''' file.
+   */
+  def createBuildSbt(): Unit = {
     val log = es.log
     log.info("Creating build.sbt")
 

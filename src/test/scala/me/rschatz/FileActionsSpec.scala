@@ -21,7 +21,7 @@ class FileActionsSpec extends WordSpec with Matchers with Sandbox {
 
     "build a proper source directory tree" in {
       val fileActions = new FileActions()
-      val dirs = fileActions.sourceDirs(baseDirectory)
+      val dirs = fileActions.defaultLayout(baseDirectory)
       dirs should have size 6
     }
 
