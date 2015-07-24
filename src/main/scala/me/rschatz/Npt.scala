@@ -35,24 +35,23 @@ object Defaults {
 }
 
 trait NptLogger {
-  def debug(msg: String)
-  def info(msg: String)
-  def warn(msg: String)
-}
-
-class WrappedSBTLogger(log: sbt.Logger) extends NptLogger {
-  def debug(msg: String) = log.debug(msg)
-  def info(msg: String) = log.info(msg)
-  def warn(msg: String) = log.warn(msg)
-}
-
-class BlackholeLogger() extends NptLogger {
   def debug(msg: String) = {}
   def info(msg: String) = {}
   def warn(msg: String) = {}
 }
 
-case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log: NptLogger = new BlackholeLogger,
+class WrappedSBTLogger(log: sbt.Logger) extends NptLogger {
+  override def debug(msg: String) = log.debug(msg)
+  override def info(msg: String) = log.info(msg)
+  override def warn(msg: String) = log.warn(msg)
+}
+
+object NptLogger {
+  object Blackhole extends NptLogger
+  def empty = Blackhole
+}
+
+case class NptExecutionContext(baseDirectory: File, args: Seq[String] = Nil, log: NptLogger = NptLogger.empty,
                                tempFolder: File = IO.temporaryDirectory) {
 
   def inputArgs() = {
