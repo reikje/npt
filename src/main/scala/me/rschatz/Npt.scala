@@ -147,16 +147,17 @@ class FromTemplateProperty(tempFolder: File = IO.temporaryDirectory, log: NptLog
   override def get: Option[sbt.File] = {
     import Defaults._
 
-    for (props <- List(sys.env, sys.props)) {
-      val propertyName = defaultTemplateProperty
-      val defaultTemplate = props.get(propertyName)
-      if (defaultTemplate.isDefined) {
-        val dtValue = defaultTemplate.get
-        log.info(s"Trying $propertyName ($dtValue)")
-        return fileActions.downloadTemplate(dtValue, tempFolder) orElse fileActions.templateFolder(new File(dtValue))
-      }
-    }
-    None
+    val propertySources = Seq(sys.env, sys.props)
+
+    propertySources.toIterator.flatMap {
+      props =>
+        for {
+          defaultTemplate <- props.get(defaultTemplateProperty)
+        } yield {
+          log.info(s"Trying $defaultTemplateProperty ($defaultTemplate)")
+          fileActions.downloadTemplate(defaultTemplate, tempFolder) orElse fileActions.templateFolder(new File(defaultTemplate))
+        }
+    }.find(_.isDefined).flatten
   }
 }
 
@@ -169,25 +170,22 @@ class FromTemplateProperty(tempFolder: File = IO.temporaryDirectory, log: NptLog
 class FromFolderProperty(templateNameOption: Option[String], log: NptLogger = NptLogger.empty) extends FolderFinder(log) {
   override def get: Option[sbt.File] = {
     import Defaults._
-    for (props <- List(sys.env, sys.props)) {
-      val templateFolderName = props.get(templateFolderProperty)
-      if (templateFolderName.isDefined) {
-        val templateFolderNameValue = templateFolderName.get
-        log.info(s"Trying $templateFolderProperty ($templateFolderNameValue)")
-        val folder = new File(templateFolderNameValue)
-        if (folder.exists()) {
-          if (templateNameOption.isDefined) {
-            val templateName = templateNameOption.get
-            return fileActions.templateFolder(new File(folder, templateName))
-          } else {
-            log.info(s"Missing name of a template in folder $templateFolderNameValue")
-          }
-        } else {
-          log.info(s"Folder: $templateFolderName is not an existing folder")
+
+    val propertySources = Seq(sys.env, sys.props)
+    propertySources.toIterator.flatMap {
+      props =>
+        for {
+          folderName <- props.get(templateFolderProperty)
+        } yield {
+          log.info(s"Trying $templateFolderProperty ($folderName)")
+          val folder = new File(folderName)
+          Option.when(folder.exists()) {
+            templateNameOption.ifNone(s"Missing name of a template in folder $folderName").flatMap {
+              templateName => fileActions.templateFolder(new File(folder, templateName))
+            }
+          }.ifNone(s"Folder $folderName is not an existing folder").flatten
         }
-      }
-    }
-    None
+    }.find(_.isDefined).flatten
   }
 }
 
