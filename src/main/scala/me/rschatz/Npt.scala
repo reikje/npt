@@ -32,6 +32,14 @@ object Defaults {
 
   val defaultTemplateProperty = "SBT_NPT_DEFAULT_TEMPLATE"
   val templateFolderProperty = "SBT_NPT_TEMPLATE_FOLDER"
+
+  implicit class RichOptionCompanion(val self: Option.type) extends AnyVal {
+    def when[A](cond: Boolean)(value: => A): Option[A] = if(cond) Some(value) else None
+  }
+
+  implicit class IfNoneThenAction[A](val self: Option[A]) extends AnyVal {
+    def ifNone(action: => Unit) = { if (self.isEmpty) action; self }
+  }
 }
 
 trait NptLogger {
@@ -87,10 +95,10 @@ class PluginExecutor(val es: NptExecutionContext) {
     log.info(s"Finding template to copy")
 
     val folderToCopy = fromDefaultTemplate() orElse fromDefaultFolder() orElse fromInputArgs()
-    if (folderToCopy.isDefined) {
-      IO.copyDirectory(folderToCopy.get, es.baseDirectory)
-    } else {
+    folderToCopy.ifNone {
       log.info(s"Not copying a template")
+    }.foreach {
+      f => IO.copyDirectory(f, es.baseDirectory)
     }
   }
 
